@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { saveShopifyStore } from '../controllers/auth.controller.js';
-import protect from '../middlewares/auth.middleware.js';
+import { saveShopifyStore } from '../controllers/authController.js';
 
 const router = Router();
 
-router.post('/save', protect, saveShopifyStore);
+// NO JWT protection - user needs to save credentials first to get a token
+router.post('/save', saveShopifyStore);
 
 export default router;

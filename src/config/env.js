@@ -7,6 +7,7 @@ const env = {
   mongoUri: process.env.MONGO_URI || '',
   jwtSecret: process.env.JWT_SECRET || '',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  encryptionKey: process.env.ENCRYPTION_KEY || '',
   shopifyApiKey: process.env.SHOPIFY_API_KEY || '',
   shopifyApiSecret: process.env.SHOPIFY_API_SECRET || '',
   shopifyScopes: process.env.SHOPIFY_SCOPES || 'read_products,write_products',
