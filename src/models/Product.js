@@ -8,14 +8,13 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     shopifyProductId: {
-      type: String,
+      type: Number,
       required: true,
-      index: true,
+      unique: true,
     },
     title: {
       type: String,
       required: true,
-      trim: true,
     },
     description: {
       type: String,
@@ -26,14 +25,12 @@ const productSchema = new mongoose.Schema(
       default: [],
     },
     variants: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {},
+      type: Array,
+      default: [],
     },
     analysisScore: {
       type: Number,
       default: 0,
-      min: 0,
-      max: 100,
     },
   },
   { timestamps: true }
