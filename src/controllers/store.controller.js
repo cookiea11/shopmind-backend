@@ -3,7 +3,7 @@ import generateToken from '../utils/generateToken.js';
 
 const createStore = async (req, res) => {
   try {
-    const { shopDomain, accessToken, plan } = req.body;
+    const { shopDomain, accessToken, scope } = req.body;
 
     if (!shopDomain || !accessToken) {
       return res.status(400).json({
@@ -27,7 +27,7 @@ const createStore = async (req, res) => {
     const newStore = new Store({
       shopDomain,
       accessToken,
-      plan,
+      scope,
     });
 
     await newStore.save();
