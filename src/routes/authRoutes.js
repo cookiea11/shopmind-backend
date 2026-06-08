@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { startShopifyAuth, shopifyCallback } from '../controllers/authController.js';
 
 const router = Router();
 
-router.get('/shopify', startShopifyAuth);
-router.get('/callback', shopifyCallback);
+// OAuth not implemented yet — stubs prevent import-crash on server start
+router.get('/shopify',  (_req, res) => res.status(501).json({ message: 'OAuth not implemented' }));
+router.get('/callback', (_req, res) => res.status(501).json({ message: 'OAuth not implemented' }));
 
 export default router;

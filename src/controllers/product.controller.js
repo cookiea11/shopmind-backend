@@ -1,6 +1,7 @@
 import Store from '../models/Store.js';
 import Product from '../models/Product.js';
 import ProductAnalysis from '../models/ProductAnalysis.js';
+import { importProductsForStore as importProductsService } from '../services/shopifyProductImport.service.js';
 
 const fetchAllProductsFromShopify = async (shopDomain, accessToken) => {
   let allProducts = [];
@@ -289,5 +290,30 @@ This product can be improved by adding more use-case, comparison, and trust cont
       message: 'Failed to analyze product',
       error: error.message,
     });
+  }
+};
+
+// Controller wrapper to trigger product import for a specific store
+export const importProductsForStore = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'storeId is required' });
+    }
+
+    const result = await importProductsService(storeId);
+
+    // Optionally update store metadata (totalProductsSynced, lastSyncedAt)
+    const store = await Store.findById(storeId);
+    if (store) {
+      store.totalProductsSynced = result.imported || 0;
+      store.lastSyncedAt = new Date();
+      await store.save();
+    }
+
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error importing products via controller:', error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };

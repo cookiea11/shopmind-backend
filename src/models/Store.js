@@ -9,7 +9,7 @@ const storeSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      index: true,
+      index: true, //to optimize field searchability in the database
     },
     // Access token is AES-encrypted at rest
     accessTokenEncrypted: {
