@@ -9,7 +9,7 @@ const run = async () => {
   await mongoose.connect(process.env.MONGO_URI);
 
  const shopDomain = 'demo-jewellery-store.myshopify.com'; // from mentor
-  const realAccessToken = 'shpua_3a53bc2077efd3e5dbce1786f06edeca'; // from mentor
+  const realAccessToken = 'shpua_bc45594f81eb367ea812b5ea86627d06'; // from mentor
 
   let store = await Store.findOne({ shopDomain });
   if (!store) {

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import CryptoJS from 'crypto-js';
 
 const storeSchema = new mongoose.Schema(
   {
@@ -78,6 +79,19 @@ const storeSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+// Virtual: decode access token
+storeSchema.virtual("accessToken").get(function () {
+  if (!this.accessTokenEncrypted) return null
+  const key = process.env.ENCRYPTION_KEY
+  const bytes = CryptoJS.AES.decrypt(this.accessTokenEncrypted, key)
+  return bytes.toString(CryptoJS.enc.Utf8)
+})
+
+// Helper: encrypt and set token
+storeSchema.methods.setAccessToken = function (plainToken) {
+  const key = process.env.ENCRYPTION_KEY
+  this.accessTokenEncrypted = CryptoJS.AES.encrypt(plainToken, key).toString()
+}
 
 const Store = mongoose.model('Store', storeSchema);
 export default Store;

@@ -44,7 +44,11 @@ async function requestShopifyProducts(domain, accessToken, pageInfo = null) {
         nextPageInfo: parseNextPageInfo(response.headers?.link),
       };
     } catch (error) {
-      console.error(`Shopify API error (version ${version}):`, error.response?.status, error.response?.data || error.message);
+      console.error(
+        `Shopify API error (version ${version}):`,
+        error.response?.status,
+        error.response?.data || error.message
+      );
       if (error.response?.status === 401 || error.response?.status === 403) throw error;
       if (version === API_VERSIONS[API_VERSIONS.length - 1]) throw error;
     }
@@ -65,19 +69,36 @@ async function fetchAllShopifyProducts(domain, accessToken) {
     if (!pageInfo || safety > 1000) break;
   }
 
-  return allProducts;
+  // Deduplicate by Shopify product id within the fetched batch
+  const byShopifyId = new Map();
+  for (const product of allProducts) {
+    byShopifyId.set(String(product.id), product);
+  }
+
+  return [...byShopifyId.values()];
 }
 
 function mapShopifyToProductDoc(shopifyProduct, storeId) {
+  const shopifyProductId = String(shopifyProduct.id);
+
   return {
     storeId,
-    shopifyProductId: shopifyProduct.id,
+    shopifyProductId,
     title: shopifyProduct.title || '',
     description: shopifyProduct.body_html || '',
+    descriptionHtml: shopifyProduct.body_html || '',
     tags: shopifyProduct.tags
       ? shopifyProduct.tags.split(',').map((t) => t.trim()).filter(Boolean)
       : [],
     variants: shopifyProduct.variants || [],
+    images: (shopifyProduct.images || []).map((img) => img.src).filter(Boolean),
+    productType: shopifyProduct.product_type || null,
+    vendor: shopifyProduct.vendor || null,
+    handle: shopifyProduct.handle || null,
+    status: shopifyProduct.status || 'active',
+    shopifyCreatedAt: shopifyProduct.created_at ? new Date(shopifyProduct.created_at) : null,
+    shopifyUpdatedAt: shopifyProduct.updated_at ? new Date(shopifyProduct.updated_at) : null,
+    syncedAt: new Date(),
   };
 }
 
@@ -90,7 +111,10 @@ function buildBulkOps(products, storeId) {
     const doc = mapShopifyToProductDoc(product, storeObjectId);
     return {
       updateOne: {
-        filter: { storeId: storeObjectId, shopifyProductId: doc.shopifyProductId },
+        filter: {
+          storeId: storeObjectId,
+          shopifyProductId: doc.shopifyProductId,
+        },
         update: { $set: doc },
         upsert: true,
       },
@@ -119,6 +143,32 @@ async function bulkWriteWithRetry(ops) {
   }
 }
 
+/**
+ * Remove duplicate product rows caused by shopifyProductId stored as number vs string.
+ * Keeps the most recently updated document per shopifyProductId.
+ */
+export async function dedupeStoreProducts(storeId) {
+  const products = await Product.find({ storeId }).sort({ updatedAt: -1 });
+  const seen = new Set();
+  const duplicateIds = [];
+
+  for (const product of products) {
+    const key = String(product.shopifyProductId);
+    if (seen.has(key)) {
+      duplicateIds.push(product._id);
+    } else {
+      seen.add(key);
+    }
+  }
+
+  if (duplicateIds.length > 0) {
+    await Product.deleteMany({ _id: { $in: duplicateIds } });
+    console.log(`Removed ${duplicateIds.length} duplicate products for store ${storeId}`);
+  }
+
+  return duplicateIds.length;
+}
+
 export async function importProductsForStore(storeId) {
   const store = await Store.findById(storeId);
   if (!store) throw new Error('Store not found');
@@ -130,18 +180,23 @@ export async function importProductsForStore(storeId) {
 
   const ops = buildBulkOps(products, store.id);
   const writeResult = await bulkWriteWithRetry(ops);
+  const duplicatesRemoved = await dedupeStoreProducts(storeId);
+  const totalInDb = await Product.countDocuments({ storeId });
 
-  console.log(`Imported ${products.length} products for store ${storeId}. bulkWrite result:`, {
-    ok: Boolean(writeResult),
+  console.log(`Import complete for store ${storeId}:`, {
+    fetchedFromShopify: products.length,
+    totalInDb,
+    duplicatesRemoved,
     insertedCount: writeResult.insertedCount ?? writeResult.nInserted ?? 0,
     upsertedCount: writeResult.upsertedCount ?? writeResult.nUpserted ?? 0,
     modifiedCount: writeResult.modifiedCount ?? writeResult.nModified ?? 0,
-    writeErrors: writeResult.writeErrors || writeResult.writeErrorsCount || 0,
   });
 
   return {
     imported: products.length,
     rawCount: products.length,
+    totalInDb,
+    duplicatesRemoved,
     writeResult,
   };
 }
