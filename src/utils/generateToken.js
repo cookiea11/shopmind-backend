@@ -5,7 +5,7 @@ const generateToken = (store) => {
     {
       storeId: store._id,
       shopDomain: store.shopDomain,
-      plan: store.plan,
+      scope: store.scope,
     },
     process.env.JWT_SECRET,
     {

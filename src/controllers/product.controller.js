@@ -3,124 +3,37 @@ import Product from '../models/Product.js';
 import ProductAnalysis from '../models/ProductAnalysis.js';
 import { importProductsForStore as importProductsService } from '../services/shopifyProductImport.service.js';
 
-const fetchAllProductsFromShopify = async (shopDomain, accessToken) => {
-  let allProducts = [];
-  let sinceId = 0;
-  let hasMore = true;
-
-  while (hasMore) {
-    const url = `https://${shopDomain}/admin/api/2025-07/products.json?limit=250&since_id=${sinceId}`;
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'X-Shopify-Access-Token': accessToken,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Shopify API error: ${response.status} ${errorText}`);
-    }
-
-    const data = await response.json();
-    const products = data.products || [];
-
-    if (products.length === 0) {
-      hasMore = false;
-      break;
-    }
-
-    allProducts = allProducts.concat(products);
-    sinceId = products[products.length - 1].id;
-  }
-
-  return allProducts;
-};
-
-export const syncStoreProducts = async (req, res) => {
+export const importProductsForStore = async (req, res) => {
   try {
-    const { storeId } = req.user;
+    const { storeId } = req.params;
 
     if (!storeId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized: storeId missing from token',
-      });
-    }
-
-    const store = await Store.findById(storeId);
-
-    if (!store) {
-      return res.status(404).json({
-        success: false,
-        message: 'Store not found',
-      });
-    }
-
-    if (!store.shopDomain || !store.accessToken) {
       return res.status(400).json({
         success: false,
-        message: 'Store is missing Shopify credentials',
+        message: 'storeId is required',
       });
     }
 
-    const shopifyProducts = await fetchAllProductsFromShopify(
-      store.shopDomain,
-      store.accessToken
-    );
+    const result = await importProductsService(storeId);
 
-    const syncedProducts = [];
-
-    for (const item of shopifyProducts) {
-      const tags =
-        typeof item.tags === 'string'
-          ? item.tags.split(',').map((tag) => tag.trim()).filter(Boolean)
-          : [];
-
-      const mappedProduct = {
-        storeId: store._id,
-        shopifyProductId: item.id,
-        title: item.title || '',
-        description: item.body_html || '',
-        tags,
-        variants: item.variants || [],
-        analysisScore: 0,
-      };
-
-      const updatedProduct = await Product.findOneAndUpdate(
-        { storeId: store._id, shopifyProductId: item.id },
-        mappedProduct,
-        { upsert: true, new: true }
-      );
-
-      syncedProducts.push(updatedProduct);
+    const store = await Store.findById(storeId);
+    if (store) {
+      store.totalProductsSynced = result.imported || 0;
+      store.lastSyncedAt = new Date();
+      store.isActive = true;
+      await store.save();
     }
-
-    store.totalProductsSynced = syncedProducts.length;
-    store.lastSyncedAt = new Date();
-    store.isActive = true;
-    await store.save();
 
     return res.status(200).json({
       success: true,
       message: 'Products synced successfully',
-      totalFetched: shopifyProducts.length,
-      totalSaved: syncedProducts.length,
-      store: {
-        shopDomain: store.shopDomain,
-        totalProductsSynced: store.totalProductsSynced,
-        lastSyncedAt: store.lastSyncedAt,
-      },
-      data: syncedProducts,
+      data: result,
     });
   } catch (error) {
-    console.error('Error syncing products:', error);
+    console.error('Error importing products via controller:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to sync products',
-      error: error.message,
+      message: error.message || 'Failed to import products',
     });
   }
 };
@@ -290,30 +203,5 @@ This product can be improved by adding more use-case, comparison, and trust cont
       message: 'Failed to analyze product',
       error: error.message,
     });
-  }
-};
-
-// Controller wrapper to trigger product import for a specific store
-export const importProductsForStore = async (req, res) => {
-  try {
-    const { storeId } = req.params;
-    if (!storeId) {
-      return res.status(400).json({ success: false, message: 'storeId is required' });
-    }
-
-    const result = await importProductsService(storeId);
-
-    // Optionally update store metadata (totalProductsSynced, lastSyncedAt)
-    const store = await Store.findById(storeId);
-    if (store) {
-      store.totalProductsSynced = result.imported || 0;
-      store.lastSyncedAt = new Date();
-      await store.save();
-    }
-
-    return res.status(200).json({ success: true, data: result });
-  } catch (error) {
-    console.error('Error importing products via controller:', error);
-    return res.status(500).json({ success: false, message: error.message });
   }
 };

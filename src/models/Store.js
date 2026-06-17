@@ -1,5 +1,4 @@
-import mongoose from "mongoose"
-import CryptoJS from "crypto-js"
+import mongoose from 'mongoose';
 
 const storeSchema = new mongoose.Schema(
   {
@@ -9,7 +8,7 @@ const storeSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      index: true, //to optimize field searchability in the database
+      index: true,
     },
     // Access token is AES-encrypted at rest
     accessTokenEncrypted: {
@@ -22,13 +21,23 @@ const storeSchema = new mongoose.Schema(
     },
     plan: {
       type: String,
-      enum: ["starter", "growth", "agency"],
+      enum: ["starter", "growth", "pro", "agency"],
       default: "starter",
     },
     planExpiresAt: {
       type: Date,
       default: null,
     },
+    addons: {
+      promptTracking: { type: Boolean, default: false },
+      aiVisibilityAudit: { type: Boolean, default: false },
+      aiVisibilityAuditAt: { type: Date, default: null },
+    },
+    // Token usage tracking (resets monthly)
+    monthlyTokenQuota: { type: Number, default: 0 }, // Max tokens per month for this plan
+    tokensUsedThisMonth: { type: Number, default: 0 }, // Tokens used in current month
+    tokenQuotaResetDate: { type: Date, default: Date.now }, // When the monthly quota resets
+    lifetimeTokensUsed: { type: Number, default: 0 }, // Total tokens used (all time)
     shopName: {
       type: String,
       default: null,
@@ -51,56 +60,24 @@ const storeSchema = new mongoose.Schema(
     },
     totalProductsSynced: { type: Number, default: 0 },
     lastSyncedAt: { type: Date, default: null },
+    // Plan usage counters (products analyzed, prompts generated)
+    usage: {
+      productsAnalyzed: { type: Number, default: 0 },
+      manualPromptsGenerated: { type: Number, default: 0 },
+      autoPromptsGenerated: { type: Number, default: 0 },
+    },
+    // FAQ storage preference: auto | inline | metafield
+    faqStrategy: {
+      type: String,
+      enum: ["auto", "inline", "metafield"],
+      default: "auto",
+    },
     isActive: { type: Boolean, default: true },
     installedAt: { type: Date, default: Date.now },
     uninstalledAt: { type: Date, default: null },
   },
   { timestamps: true },
-)
+);
 
-// Virtual: decode access token
-storeSchema.virtual("accessToken").get(function () {
-  if (!this.accessTokenEncrypted) return null
-  const key = process.env.ENCRYPTION_KEY
-  const bytes = CryptoJS.AES.decrypt(this.accessTokenEncrypted, key)
-  return bytes.toString(CryptoJS.enc.Utf8)
-})
-
-// Auto-encrypt before save
-storeSchema.pre("save", function (next) {
-  if (this.isModified("accessTokenEncrypted")) return next()
-  next()
-})
-
-// Helper: encrypt and set token
-storeSchema.methods.setAccessToken = function (plainToken) {
-  const key = process.env.ENCRYPTION_KEY
-  this.accessTokenEncrypted = CryptoJS.AES.encrypt(plainToken, key).toString()
-}
-
-// Check plan features
-storeSchema.methods.hasFeature = function (feature) {
-  const features = {
-    starter: ["analyze", "optimize"],
-    growth: [
-      "analyze",
-      "optimize",
-      "simulate",
-      "promptIntelligence",
-      "competitorGap",
-    ],
-    agency: [
-      "analyze",
-      "optimize",
-      "simulate",
-      "promptIntelligence",
-      "competitorGap",
-      "whiteLabel",
-      "multiStore",
-    ],
-  }
-  return (features[this.plan] || []).includes(feature)
-}
-
-const Store = mongoose.model("Store", storeSchema)
-export default Store
+const Store = mongoose.model('Store', storeSchema);
+export default Store;

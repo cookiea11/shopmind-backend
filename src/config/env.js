@@ -4,7 +4,7 @@ dotenv.config();
 const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: process.env.PORT || 5000,
-  mongoUri: process.env.MONGO_URI || '',
+  mongoUri: process.env.MONGO_URI || 'mongodb+srv://siddhigulati_db_user:WXmFKd779t9NSd3f@cluster1.5f0puds.mongodb.net/shopmind?appName=Cluster1',
   jwtSecret: process.env.JWT_SECRET || '',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   encryptionKey: process.env.ENCRYPTION_KEY || '',
