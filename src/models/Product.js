@@ -1,5 +1,8 @@
+// This script defines the Mongoose schema and model for products in the application.
+
 import mongoose from 'mongoose';
 
+// Define the schema for product variants
 const variantSchema = new mongoose.Schema(
   {
     shopifyVariantId: String,
@@ -10,7 +13,7 @@ const variantSchema = new mongoose.Schema(
   },
   { _id: false },
 )
-
+// Define the schema for product metafields
 const metafieldSchema = new mongoose.Schema(
   {
     namespace: String,
@@ -20,7 +23,7 @@ const metafieldSchema = new mongoose.Schema(
   },
   { _id: false }
 )
-
+// Define the main product schema with various fields related to the product,
 const productSchema = new mongoose.Schema(
   {
     storeId: {
@@ -37,7 +40,7 @@ const productSchema = new mongoose.Schema(
     title: { type: String, required: true },
     description: String,
     descriptionHtml: String,
-    // FAQ state from Shopify
+
     existingFaqs: [
       {
         question: String,
@@ -127,7 +130,7 @@ const productSchema = new mongoose.Schema(
 
   { timestamps: true },
 )
-
+// Ensure unique index on storeId + shopifyProductId to prevent duplicates
 productSchema.index({ storeId: 1, shopifyProductId: 1 }, { unique: true });
 
 const Product = mongoose.model('Product', productSchema);

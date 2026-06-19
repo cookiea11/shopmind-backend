@@ -1,3 +1,5 @@
+// This script contains the authentication controller for handling Shopify OAuth and credential validation.
+
 import axios from 'axios';
 import crypto from 'crypto';
 import Store from '../models/Store.js';
@@ -5,11 +7,9 @@ import { getShopDetails, validateShopifyCredentials } from '../services/shopify.
 import generateToken from '../utils/generateToken.js';
 import env from '../config/env.js';
 
-/**
- * Test endpoint to validate Shopify credentials
- * Used for debugging without saving to database
- */
-export const testShopifyCredentials = async (req, res) => {
+// Test Shopify credentials by making a request to the Shopify API
+
+export const testShopifyCredentials = async (req, res) => { 
   try {
     const { shopDomain, accessToken } = req.body;
 
@@ -17,7 +17,7 @@ export const testShopifyCredentials = async (req, res) => {
     console.log(`Domain: ${shopDomain}`);
     console.log(`Token length: ${accessToken?.length || 0}`);
 
-    if (!shopDomain || !accessToken) {
+    if (!shopDomain || !accessToken) { 
       return res.status(400).json({
         success: false,
         message: 'shopDomain and accessToken are required',
@@ -28,6 +28,7 @@ export const testShopifyCredentials = async (req, res) => {
 
     console.log('=== TEST CREDENTIALS SUCCESS ===\n');
 
+    // Return the shop details if credentials are valid
     return res.status(200).json({
       success: true,
       message: 'Credentials are valid',
@@ -63,9 +64,8 @@ export const testShopifyCredentials = async (req, res) => {
   }
 };
 
-/**
- * Start Shopify OAuth flow
- */
+// Start Shopify OAuth flow
+
 export const startShopifyAuth = async (req, res) => {
   try {
     const { shop } = req.query;
@@ -76,13 +76,15 @@ export const startShopifyAuth = async (req, res) => {
         message: 'Shop domain is required',
       });
     }
-
+    // Ensure the shop domain is in the correct format
     const shopDomain = shop.includes('.myshopify.com') ? shop : `${shop}.myshopify.com`;
     const state = crypto.randomBytes(16).toString('hex');
 
+    // Store the state in the session for CSRF protection
     req.session = req.session || {};
     req.session.oauthState = state;
 
+    // Construct the Shopify authorization URL with required parameters
     const scopes = env.shopifyScopes || 'read_products,write_products';
     const authUrl = `https://${shopDomain}/admin/oauth/authorize?client_id=${env.shopifyApiKey}&scope=${scopes}&redirect_uri=${env.shopifyAppUrl}/api/auth/callback&state=${state}`;
 
@@ -101,9 +103,7 @@ export const startShopifyAuth = async (req, res) => {
   }
 };
 
-/**
- * Handle Shopify OAuth callback
- */
+// Handle Shopify OAuth callback and exchange code for access token, then save store details
 export const shopifyCallback = async (req, res) => {
   try {
     const { code, shop, state } = req.query;
@@ -121,7 +121,6 @@ export const shopifyCallback = async (req, res) => {
         message: 'Invalid state parameter - possible CSRF attack',
       });
     }
-
     const shopDomain = shop.includes('.myshopify.com') ? shop : `${shop}.myshopify.com`;
 
     const tokenResponse = await axios.post(
@@ -140,8 +139,10 @@ export const shopifyCallback = async (req, res) => {
       throw new Error('Failed to obtain access token from Shopify');
     }
 
+    // Fetch shop details using the access token to store in the database
     const shopDetails = await getShopDetails(shopDomain, accessToken);
 
+    // Upsert the store in the database with the new access token and shop details
     const store = await Store.findOneAndUpdate(
       { shopDomain },
       {
@@ -157,11 +158,13 @@ export const shopifyCallback = async (req, res) => {
       { upsert: true, new: true }
     );
 
+    // Save the access token securely in the store document
     store.setAccessToken(accessToken);
     await store.save();
 
     const jwtToken = generateToken(store);
 
+    // Return the JWT token and shop details to the client
     return res.status(200).json({
       success: true,
       message: 'Successfully authenticated with Shopify',
@@ -185,10 +188,7 @@ export const shopifyCallback = async (req, res) => {
   }
 };
 
-/**
- * Save Shopify Store with manual credentials
- * NO JWT required - bootstrap endpoint
- */
+// Validate the access token for a given shop domain and return shop details if valid
 export const saveShopifyStore = async (req, res) => {
   try {
     const { shopDomain, accessToken, scope } = req.body;
@@ -208,6 +208,8 @@ export const saveShopifyStore = async (req, res) => {
     const shopDetails = await getShopDetails(shopDomain, accessToken);
     console.log('[Auth] ✓ Credentials validated');
 
+
+    // Upsert the store in the database with the new access token and shop details
     const store = await Store.findOneAndUpdate(
       { shopDomain },
       {

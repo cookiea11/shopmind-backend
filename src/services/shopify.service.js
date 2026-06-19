@@ -1,11 +1,7 @@
+// This script defines the Shopify service functions for fetching shop details and validating credentials
+
 import axios from 'axios';
 
-/**
- * Fetches shop details from Shopify API using axios (better error handling)
- * @param {string} shopDomain - Shopify store domain (e.g., "store.myshopify.com")
- * @param {string} accessToken - Shopify access token (custom app or public app)
- * @returns {Promise<Object>} Shop details object
- */
 export const getShopDetails = async (shopDomain, accessToken) => {
   try {
     // Ensure domain format is correct
@@ -84,9 +80,7 @@ export const getShopDetails = async (shopDomain, accessToken) => {
   }
 };
 
-/**
- * Validate Shopify credentials
- */
+
 export const validateShopifyCredentials = async (shopDomain, accessToken) => {
   try {
     return await getShopDetails(shopDomain, accessToken);

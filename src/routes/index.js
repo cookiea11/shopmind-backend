@@ -1,3 +1,6 @@
+// This script defines the main Express router for the application, 
+// routes for health checks, authentication, store management, product management, and product analysis. 
+
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import env from '../config/env.js';

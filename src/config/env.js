@@ -1,3 +1,4 @@
+// This script is used to load environment variables from a .env file and provide them to the application.
 import dotenv from 'dotenv';
 
 dotenv.config();

@@ -1,3 +1,4 @@
+// This script defines the controller functions for handling product analysis-related API requests, including analyzing a product, fetching analysis usage, and listing analyzed products for a store.
 import {
   analyzeProduct,
   getAnalysisUsage,
@@ -18,6 +19,7 @@ function assertStoreAccess(req, res) {
 
   return true;
 }
+// Controller function to handle product analysis API request, which analyzes a specific product for a store and returns the analysis results along with usage information.
 
 export async function getAnalysisUsageController(req, res) {
   try {

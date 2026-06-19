@@ -1,3 +1,6 @@
+// This file sets up the Express application, including middleware for security, CORS, logging, and error handling.
+//  It also defines the API routes and serves the Swagger documentation for the API.
+
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';

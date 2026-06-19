@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+// This script defines the Mongoose schema and model for stores in the application
 import CryptoJS from 'crypto-js';
 
 const storeSchema = new mongoose.Schema(

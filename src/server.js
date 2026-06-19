@@ -1,4 +1,6 @@
-import env from './config/env.js';      // ← must be first
+// This is the entry point of the ShopMind API server
+
+import env from './config/env.js';      //must be first
 import app from './app.js';
 import connectDB from './config/db.js';
 import mongoose from 'mongoose';

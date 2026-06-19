@@ -1,3 +1,4 @@
+// This script defines the Express router for product-related routes in the application
 import { Router } from 'express';
 import {
   getAllStoredProducts,

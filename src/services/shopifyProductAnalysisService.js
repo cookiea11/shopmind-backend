@@ -1,3 +1,6 @@
+// This script defines the Shopify mock Product Analysis Service, which provides functions to analyze products based on their descriptions and metadata
+// tracks usage against plan limits.
+
 import Product from '../models/Product.js';
 import ProductAnalysis from '../models/ProductAnalysis.js';
 import Store from '../models/Store.js';
@@ -159,7 +162,7 @@ export async function analyzeProduct(storeId, productId) {
 
   const result = runSimulatedAnalysis(product);
 
-  // Analysis lives ONLY in productanalyses — never mutate the product document
+  // Analysis lives ONLY in productanalyses
   const analysis = await ProductAnalysis.findOneAndUpdate(
     { storeId, productId: product._id },
     {

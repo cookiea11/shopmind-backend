@@ -1,3 +1,5 @@
+// This script defines the Express router for private routes in the application
+// Currently, it includes a placeholder route for accessing user information.
 import { Router } from 'express';
 import protect from '../middlewares/auth.middleware.js';
 

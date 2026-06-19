@@ -1,3 +1,5 @@
+// This script is used to configure Swagger for API documentation in the application.
+
 import swaggerJSDoc from 'swagger-jsdoc';
 
 const options = {

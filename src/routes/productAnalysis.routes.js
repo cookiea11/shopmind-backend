@@ -1,3 +1,5 @@
+// This script defines the Express router for product analysis-related routes in the application
+
 import { Router } from 'express';
 import protect from '../middlewares/auth.middleware.js';
 import {

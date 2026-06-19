@@ -1,3 +1,5 @@
+// This script defines the authentication middleware for protecting routes in the application.
+
 import jwt from 'jsonwebtoken';
 
 const protect = (req, res, next) => {

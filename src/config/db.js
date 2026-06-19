@@ -1,5 +1,9 @@
+// This script is used to connect to the MongoDB database using Mongoose.
+
 import mongoose from 'mongoose';
 import env from './env.js';
+
+// Function to connect to the MongoDB database using Mongoose
 
 const connectDB = async () => {
   try {
@@ -11,6 +15,8 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
+
+// Set up event listeners for Mongoose connection events
 
 mongoose.connection.on('connected', () => {
   console.log('Mongoose connection established');

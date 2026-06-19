@@ -1,7 +1,10 @@
+// This script defines the controller functions for handling product-related API requests, including importing products from Shopify and fetching stored products from the database.
+
 import Store from '../models/Store.js';
 import Product from '../models/Product.js';
 import { importProductsForStore as importProductsService } from '../services/shopifyProductImport.service.js';
 
+// Controller functions for handling product-related API requests, including importing products from Shopify and fetching stored products from the database.
 export const importProductsForStore = async (req, res) => {
   try {
     const { storeId } = req.params;

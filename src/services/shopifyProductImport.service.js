@@ -1,3 +1,5 @@
+// This script defines the Shopify Product Import Service, which handles fetching products from the Shopify API and importing them into the local MongoDB database.
+
 import axios from 'axios';
 import mongoose from 'mongoose';
 import Product from '../models/Product.js';
@@ -11,7 +13,7 @@ const MAX_RETRIES = 3;
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
+// Parses the Link header from Shopify API responses to extract the page_info for the next page of results.
 function parseNextPageInfo(linkHeader) {
   if (!linkHeader) return null;
   const parts = linkHeader.split(',');
@@ -23,6 +25,7 @@ function parseNextPageInfo(linkHeader) {
   return url.searchParams.get('page_info');
 }
 
+// Main function to import products for a given storeId. Fetches products from Shopify and upserts them into the MongoDB database.
 async function requestShopifyProducts(domain, accessToken, pageInfo = null) {
   for (const version of API_VERSIONS) {
     try {
@@ -54,7 +57,7 @@ async function requestShopifyProducts(domain, accessToken, pageInfo = null) {
     }
   }
 }
-
+// Fetches all products from Shopify for a given store, handling pagination and deduplication by Shopify product ID.
 async function fetchAllShopifyProducts(domain, accessToken) {
   let allProducts = [];
   let pageInfo = null;
@@ -77,7 +80,7 @@ async function fetchAllShopifyProducts(domain, accessToken) {
 
   return [...byShopifyId.values()];
 }
-
+// Maps a Shopify product object to the local Product document format for MongoDB.
 function mapShopifyToProductDoc(shopifyProduct, storeId) {
   const shopifyProductId = String(shopifyProduct.id);
 
@@ -101,7 +104,7 @@ function mapShopifyToProductDoc(shopifyProduct, storeId) {
     syncedAt: new Date(),
   };
 }
-
+// Builds bulkWrite operations for upserting products into MongoDB based on the fetched Shopify products.
 function buildBulkOps(products, storeId) {
   const storeObjectId = mongoose.Types.ObjectId.isValid(storeId)
     ? new mongoose.Types.ObjectId(storeId)
@@ -121,7 +124,7 @@ function buildBulkOps(products, storeId) {
     };
   });
 }
-
+// Performs bulkWrite operations with retry logic for transient errors like rate limits or server errors.
 async function bulkWriteWithRetry(ops) {
   let attempt = 0;
   while (true) {
@@ -143,10 +146,7 @@ async function bulkWriteWithRetry(ops) {
   }
 }
 
-/**
- * Remove duplicate product rows caused by shopifyProductId stored as number vs string.
- * Keeps the most recently updated document per shopifyProductId.
- */
+
 export async function dedupeStoreProducts(storeId) {
   const products = await Product.find({ storeId }).sort({ updatedAt: -1 });
   const seen = new Set();
